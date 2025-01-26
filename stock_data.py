@@ -41,7 +41,7 @@ def plot_kline_and_volume(df):
     
     
     
-
+    
     # 自定义颜色映射
     colors = mpf.make_marketcolors(up='r', down='g', volume='in')
     # mpf_style = mpf.make_mpf_style(marketcolors=colors, base_mpf_style='yahoo', rc={'figure.facecolor': 'white', 'axes.facecolor': 'white'})
