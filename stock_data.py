@@ -3,6 +3,11 @@ import pymysql
 from sqlalchemy import create_engine
 import pandas as pd
 import mplfinance as mpf
+import mysql.connector
+from mysql.connector import Error
+import sqlalchemy  # 添加: 导入sqlalchemy模块
+import cryptography  # 添加对 cryptography 包的导入
+
 
 def fetch_stock_data(stock_code, start_date, end_date):
     """
@@ -17,15 +22,56 @@ def fetch_stock_data(stock_code, start_date, end_date):
     return stock_zh_a_hist_df
 
 def write_to_mysql(df, table_name, db_config):
-    """
-    将DataFrame写入MySQL数据库
 
-    :param df: 要写入的数据框
-    :param table_name: 数据库表名
-    :param db_config: 数据库连接配置
-    """
     engine = create_engine(f"mysql+pymysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}")
-    df.to_sql(name=table_name, con=engine, if_exists='replace', index=False)
+
+    with engine.connect() as connection:
+        # 使用参数化查询来避免SQL注入
+        params = [
+            (
+                row['id'], row['code'], row['date'], row['open'], row['close'], row['high'], row['low'],
+                row['volume'], row['volumeM'], row['zhenfu'], row['zhangde'], row['huanshou'], row['zhangdeM']
+            )
+            for index, row in df.iterrows()
+        ]
+
+        sql = f"""
+            INSERT INTO {table_name} (id, code, date, open, close, high, low, volume, volumeM, zhenfu, zhangde, huanshou, zhangdeM)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE
+            code=VALUES(code),
+            date=VALUES(date),
+            open=VALUES(open),
+            close=VALUES(close),
+            high=VALUES(high),
+            low=VALUES(low),
+            volume=VALUES(volume),
+            volumeM=VALUES(volumeM),
+            zhenfu=VALUES(zhenfu),
+            zhangde=VALUES(zhangde),
+            huanshou=VALUES(huanshou),
+            zhangdeM=VALUES(zhangdeM)
+        """
+        # 修改: 确保 SQL 语句正确
+        connection.execute(sql, params)
+
+
+def read_from_mysql(table_name, db_config):
+
+    
+    try:
+        connection = mysql.connector.connect(**db_config)
+        if connection.is_connected():
+            cursor = connection.cursor(dictionary=True)
+            cursor.execute(f"SELECT * FROM {table_name}")
+            data = cursor.fetchall()
+            cursor.close()
+            return data
+    except Error as e:
+        print(f"Error while connecting to MySQL: {e}")
+    finally:
+        if connection.is_connected():
+            connection.close()
 
 def plot_kline_and_volume(df):
     """
@@ -48,10 +94,13 @@ def plot_kline_and_volume(df):
 
 def format_data(df):
      # 确保DataFrame的索引是日期时间类型
-    df.index = pd.to_datetime(df['日期'])
+    df['日期'] = pd.to_datetime(df['日期'])
 
-    #把日期+股票代码
-    
+    # 把日期+股票代码
+    df['id'] = df['日期'].dt.strftime('%Y%m%d') + '_' + df['股票代码']
+
+    df.index = df['id']
+
     # 重命名列以符合mplfinance的要求
     df.rename(columns={'股票代码': 'code','开盘': 'open', '收盘': 'close', '最高': 'high', '最低': 'low', '成交量': 'volume'
                             , '成交额': 'volumeM', '振幅': 'zhenfu', '涨跌幅': 'zhangde', '换手率': 'huanshou', '涨跌额': 'zhangdeM', '日期': 'date'}, inplace=True)
@@ -94,30 +143,32 @@ def identify_stock_strategy(df, lookback_days=50, recent_days=3, volume_threshol
 
 
 if __name__ == "__main__":
-    # 示例：获取贵州茅台（股票代码 600519）从20230101到20231001的历史数据
-    stock_code = "600519"
+    # 示例：获取多支股票从20241201到20250124的历史数据
+    stock_codes = ["600519", "000001", "601318"]  # 添加更多股票代码
     start_date = "20241201"
     end_date = "20250124"
-    data = fetch_stock_data(stock_code, start_date, end_date)
-    print(data)
-
-    format_data(data)
 
     # 数据库配置信息
     db_config = {
-        'host': '47.243.242.206',
+        'host': 'localhost',
         'user': 'root',
         'port': '3306',
-        'password': 'JJJ8jj8J8',
+        'password': 'helowin',
         'database': 'biga'
     }
 
-    # 将数据写入MySQL数据库
-    # write_to_mysql(data, 'stock_data', db_config)
+    for stock_code in stock_codes:
+        data = fetch_stock_data(stock_code, start_date, end_date)
+        print(data)
+
+        format_data(data)
+
+        # 将数据写入MySQL数据库
+        write_to_mysql(data, 'stock_data', db_config)
 
     # 绘制K线图和量能图
     #plot_kline_and_volume(data)
 
     # 应用策略
-    strategy_stocks = identify_stock_strategy(data)
-    print("符合策略的股票代码:", strategy_stocks)
+    # strategy_stocks = identify_stock_strategy(data)
+    # print("符合策略的股票代码:", strategy_stocks)
