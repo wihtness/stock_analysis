@@ -1,8 +1,14 @@
 from config import db_config
 
-from sqlalchemy import create_engine, text
 import akshare as ak
+import pymysql
+from sqlalchemy import create_engine
 import pandas as pd
+import mplfinance as mpf
+import mysql.connector
+from mysql.connector import Error
+from sqlalchemy import create_engine, text
+
 
 """
     使用akshare库获取指定股票的历史数据
@@ -14,8 +20,12 @@ import pandas as pd
     """
 def fetch_stock_data(stock_code, start_date, end_date):
 
-    stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date=start_date, end_date=end_date, adjust="")
-    return stock_zh_a_hist_df
+    try:
+        stock_zh_a_hist_df = ak.stock_zh_a_hist(symbol=stock_code, period="daily", start_date=start_date, end_date=end_date, adjust="")
+        return stock_zh_a_hist_df
+    except Exception as e:
+        print(f"An error occurred while fetching stock data for {stock_code}: {e}")
+        return pd.DataFrame()
 
 
 # 1. 获取上交所主板股票代码（代码以60开头，科创板除外）
@@ -55,10 +65,12 @@ def format_data(df):
 
 def write_to_mysql(df, table_name, db_config):
     # 修改连接字符串以指定身份验证插件
-    engine = create_engine(f"mysql+pymysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}?auth_plugin=mysql_native_password")
+    engine = create_engine(f"mysql+pymysql://{db_config['user']}:{db_config['password']}@{db_config['host']}:{db_config['port']}/{db_config['database']}")
 
     with engine.connect() as connection:
         # 使用参数化查询来避免SQL注入
+
+
         sql = text(f"""
             INSERT INTO {table_name} (id, code, date, open, close, high, low, volume, volumeM, zhenfu, zhangde, huanshou, zhangdeM)
             VALUES (:id, :code, :date, :open, :close, :high, :low, :volume, :volumeM, :zhenfu, :zhangde, :huanshou, :zhangdeM)
@@ -100,29 +112,45 @@ def write_to_mysql(df, table_name, db_config):
             print(f"An error occurred: {e}")
 
 
-def sync_data():
-    stock_codes = ["600519", "000001", "601318"]  # 添加更多股票代码
-    start_date = "20241201"
-    end_date = "20250124"
+def sync_data(stock_codes):
+    # stock_codes = ["600519", "000001", "601318"]  # 添加更多股票代码
+    start_date = "20241101"
+    end_date = "20250207"
 
 
-
-    for stock_code in stock_codes:
+    for index, stock_code in enumerate(stock_codes):
         data = fetch_stock_data(stock_code, start_date, end_date)
-        print(data)
+
+        #控制台输出下载下来的data数据长度
+        print(f"Downloaded {len(data)} rows for stock {stock_code}")
+
+        if data.empty:
+            print(f"No data found for stock {stock_code}")
+            continue
 
         format_data(data)
 
         # 将数据写入MySQL数据库
         write_to_mysql(data, 'stock_data', db_config)
 
-if __name__ == "__main__":
+        # 输出进度
+        print(f"Processed {index + 1}/{len(stock_codes)} stocks: {stock_code}")
 
 
-    # 3. 合并结果并整理格式
+def getAllCode():
     df_main_board = pd.concat([
         get_sh_main_board().rename(columns={'证券代码': '代码', '证券简称': '简称'}),
         get_sz_main_board().rename(columns={'A股代码': '代码', 'A股简称': '简称'})
     ], ignore_index=True)
 
     print(df_main_board)
+
+    #存入csv文件中
+    df_main_board.to_csv('stock_list.csv', index=False)
+
+if __name__ == "__main__":
+    #读取stock_list.csv数据
+    df = pd.read_csv('stock_list.csv', dtype={'代码': str})  # 指定'代码'列为字符串类型
+    #把第一列股票代码放到列表
+    stock_codes = df['代码'].tolist()
+    sync_data(stock_codes)
