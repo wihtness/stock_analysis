@@ -51,39 +51,35 @@ def detect_volume_spike(stock_data, quiet_days=10, recent_days=3, volume_thresho
     # 如果最近几天交易量突增并且波动增加，返回 True
     return recent_volume_spike and recent_price_change_spike
 
-"""
-    识别符合特定策略的股票代码
 
-    :param df: 包含股票历史数据的DataFrame
-    :param lookback_days: 过去多少个交易日
-    :param recent_days: 最近多少个交易日
-    :param volume_threshold: 交易量阈值
-    :param price_volatility_threshold: 价格波动阈值
-    :return: 符合策略的股票代码列表
+"""
+    股票价格估计函数
 """
 
-def identify_stock_strategy(df, lookback_days=50, recent_days=3, volume_threshold=1e6, price_volatility_threshold=0.01):
+"""
+    股票题材标签
+        标签更新事件
+"""
 
-    # 确保DataFrame按日期排序
-    df = df.sort_index()
+"""
+    题材热度--热门题材--（联合证券数据、研究数据）
+        下属股票--
+        数据来源及可信度分析
+        股票评级
+"""
 
-    # 计算过去lookback_days天的平均交易量和价格波动
-    df['avg_volume'] = df['volume'].rolling(window=lookback_days).mean()
-    df['price_change'] = df['close'].pct_change()
-    df['volatility'] = df['price_change'].rolling(window=lookback_days).std()
+"""
+    股票评级函数
+        买入评价
+            一级：
+            二级：
+            三级：
+"""
 
-    # 检查过去lookback_days天的交易量是否较小且价格波动不大
-    low_volume_condition = df['avg_volume'] < volume_threshold
-    low_volatility_condition = df['volatility'] < price_volatility_threshold
-
-    # 检查最近recent_days天的交易量是否突然放大且价格波动剧烈
-    recent_avg_volume = df['volume'].rolling(window=recent_days).mean().shift(-(recent_days-1))
-    recent_price_change = df['price_change'].rolling(window=recent_days).std().shift(-(recent_days-1))
-    high_recent_volume_condition = recent_avg_volume > volume_threshold * 5
-    high_recent_volatility_condition = recent_price_change > price_volatility_threshold * 5
-
-    # 找出符合条件的股票
-    strategy_condition = (low_volume_condition & low_volatility_condition & high_recent_volume_condition & high_recent_volatility_condition)
-    strategy_stocks = df[strategy_condition]
-
-    return strategy_stocks.index.tolist()
+"""
+    零散数据整理函数：
+        整理题材消息面
+            地区新政策
+            地区焦点事件
+            行业/企业经营活动公告
+"""
