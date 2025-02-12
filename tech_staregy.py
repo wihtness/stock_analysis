@@ -67,7 +67,9 @@ def detect_volume_spike(stock_data, quiet_days=15, recent_days=2, volume_thresho
                 下属股票--
                 数据来源及可信度分析
                 股票评级
-                
+        
+        #相关性股票选取（妖股抱团逻辑、行业链上下游联动板块）
+            sql关联性分析脚本     
     
         #股票评级函数
             股票价格估计函数--计算买入价格
