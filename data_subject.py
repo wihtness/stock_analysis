@@ -12,7 +12,7 @@ def get_industry_mapping():
         name = row["板块名称"]
         try:
             # 获取单个行业板块的成分股
-            df = ak.stock_board_industry_cons_em(symbol=code)
+            df = ak.stock_board_industry_cons_em(symbol=name)
             df["板块类型"] = "行业板块"
             df["板块名称"] = name
             industry_mapping = pd.concat([industry_mapping, df])
@@ -28,7 +28,7 @@ def get_concept_mapping():
         name = row["板块名称"]
         try:
             # 获取概念板块成分股
-            df = ak.stock_board_concept_cons_em(symbol=code)
+            df = ak.stock_board_concept_cons_em(symbol=name)
             # 检查返回数据是否为空
             if df.empty:
                 print(f"\n概念板块 {name}({code}) 无成分股数据，已跳过")
@@ -41,10 +41,9 @@ def get_concept_mapping():
             print(f"\n获取概念板块 {name}({code}) 失败: {str(e)}")
     return concept_mapping
 
-# 重新运行修复后的函数
-concept_df = get_concept_mapping()
 
 if __name__ == "__main__":
+    data = get_industry_mapping()
     # 5. 打印结果示例
-    print("股票数量:", len(concept_df))
-    print(concept_df.head())
+    print("股票数量:", len(data))
+    print(data.head())

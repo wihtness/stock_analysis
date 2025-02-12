@@ -1,7 +1,7 @@
 import pandas as pd
 import unittest
 
-from data_staregy import identify_stock_strategy
+from tech_staregy import identify_stock_strategy
 
 
 class TestIdentifyStockStrategy(unittest.TestCase):

@@ -3,8 +3,7 @@ import mplfinance as mpf
 import mysql.connector
 from mysql.connector import Error
 
-
-from data_staregy import detect_volume_spike
+from tech_staregy import detect_volume_spike
 from config import db_config
 
 import pandas as pd
@@ -46,14 +45,12 @@ def plot_kline_and_volume(df):
     mpf.plot(df, type='candle', style=mpf_style, volume=True, title='Stock K-line and Volume', ylabel='Price', ylabel_lower='Volume', figratio=(14, 7))
 
 
+def fangliang_check():
+    df = pd.read_csv('data/stock_list.csv', dtype={'代码': str})  # 指定'代码'列为字符串类型
 
+    # 将股票代码和名称存储在字典中
+    stock_info = dict(zip(df['代码'], df['简称']))
 
-if __name__ == "__main__":
-    # data=read_from_mysql('stock_data','600000')
-    # result = detect_volume_spike(data)
-    # print("该股票是否符合条件：", result)
-
-    df = pd.read_csv('stock_list.csv', dtype={'代码': str})  # 指定'代码'列为字符串类型
     # 把第一列股票代码放到列表
     stock_codes = df['代码'].tolist()
     for index, stock_code in enumerate(stock_codes):
@@ -63,7 +60,9 @@ if __name__ == "__main__":
         # 应用策略
         result = detect_volume_spike(data)
         if result == True:
-            print(f"股票{stock_code}符合条件")
+            stock_name = stock_info.get(stock_code, "未知")
+            print(f"股票{stock_code}({stock_name})符合条件")
 
-        # 绘制K线图和量能图
-        #plot_kline_and_volume(data)
+
+if __name__ == "__main__":
+    fangliang_check()

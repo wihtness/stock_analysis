@@ -13,7 +13,9 @@ import pandas as pd
     返回:
     bool: 如果符合条件返回 True，否则返回 False。
 """
-def detect_volume_spike(stock_data, quiet_days=10, recent_days=3, volume_threshold=2, price_change_threshold=0.02):
+
+
+def detect_volume_spike(stock_data, quiet_days=15, recent_days=2, volume_threshold=2, price_change_threshold=0.02):
 
     stock_data = pd.DataFrame(stock_data)  # 确保stock_data是一个DataFrame
     stock_data = stock_data.sort_values(by='date')
@@ -23,7 +25,9 @@ def detect_volume_spike(stock_data, quiet_days=10, recent_days=3, volume_thresho
     quiet_data = stock_data.iloc[-(quiet_days + recent_days):-recent_days]
 
     if quiet_data.empty or len(quiet_data) < quiet_days:
-        raise ValueError("历史数据不足以计算安静期的统计指标")
+        # raise ValueError("历史数据不足以计算安静期的统计指标")
+        print(f"股票{stock_data.iloc[0]['code']}历史数据不足以计算安静期的统计指标")
+        return False
 
     # 计算平均交易量
     avg_volume_quiet = quiet_data['volume'].mean()
@@ -52,34 +56,35 @@ def detect_volume_spike(stock_data, quiet_days=10, recent_days=3, volume_thresho
     return recent_volume_spike and recent_price_change_spike
 
 
-"""
-    股票价格估计函数
-"""
-
-"""
-    股票题材标签
-        标签更新事件
+# （盘前）检测近期波动较大的股票
 """
 
-"""
-    题材热度--热门题材--（联合证券数据、研究数据）
-        下属股票--
-        数据来源及可信度分析
-        股票评级
-"""
-
-"""
-    股票评级函数
-        买入评价
-            一级：
-            二级：
-            三级：
-"""
-
-"""
-    零散数据整理函数：
-        整理题材消息面
+    选股@买入
+        
+        股票题材标签--题材选股
+            标签更新事件
+            题材热度--热门题材--（联合证券数据、研究数据）
+                下属股票--
+                数据来源及可信度分析
+                股票评级
+                
+    
+        #股票评级函数
+            股票价格估计函数--计算买入价格
+        
+        #零散数据整理函数
+            整理题材消息面
             地区新政策
             地区焦点事件
             行业/企业经营活动公告
+"""
+
+# （盘中）检测到主力信号后，预测是否能持续到涨停（预测短期内是否多方>空方）
+"""
+    盘中实时选股@买入
+        观察板块动势（散户主要是根据板块题材来选股，对于个股其实不太熟悉），如果板块题材整体上行便能持续。
+            题材指标--
+                资金倾向分析---机构买卖数据
+                焦点事件热度--新闻触觉
+        信号甄别--
 """

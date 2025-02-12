@@ -114,8 +114,8 @@ def write_to_mysql(df, table_name, db_config):
 
 def sync_data(stock_codes):
     # stock_codes = ["600519", "000001", "601318"]  # 添加更多股票代码
-    start_date = "20241101"
-    end_date = "20250207"
+    start_date = "20250207"
+    end_date = "20250211"
 
 
     for index, stock_code in enumerate(stock_codes):
@@ -148,9 +148,13 @@ def getAllCode():
     #存入csv文件中
     df_main_board.to_csv('stock_list.csv', index=False)
 
-if __name__ == "__main__":
-    #读取stock_list.csv数据
-    df = pd.read_csv('stock_list.csv', dtype={'代码': str})  # 指定'代码'列为字符串类型
-    #把第一列股票代码放到列表
+
+def sync_data():
+    # 读取stock_list.csv数据
+    df = pd.read_csv('data/stock_list.csv', dtype={'代码': str})  # 指定'代码'列为字符串类型
+    # 把第一列股票代码放到列表
     stock_codes = df['代码'].tolist()
     sync_data(stock_codes)
+
+if __name__ == "__main__":
+    sync_data()
